@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Test::More tests => 27;
+use Test::More tests => 29;
 use lib ".";
 use HTML::Calendar::Simple;
 use Date::Simple;
@@ -70,11 +70,8 @@ unlike $string, qr/<a href=\"http:\/\/www.stray-toaster.co.uk\">My site<\/a>/, "
 unlike $string, qr/<a href=\"a link\">7<\/a>/, "stringified 7th is NOT an href";
 unlike $string, qr/TESTDATA/, "stringified doesn't contain TESTDATA";
 
+is $cal->picture, 0, "There is no pin-up";
 
+$cal->pin_up("This would be a picture");
 
-
-
-
-
-
-
+is $cal->picture, "This would be a picture", "There is now a pin-up";

@@ -1,5 +1,8 @@
 Revision history for Perl extension HTML::Calendar::Simple.
 
+0.03  Fri Mar 15 9:00:00 2002
+        - Added pin_up,m calendar_year and some doc changes.
+
 0.02  Thu Mar 14 10:10:00 2002
         - Added CGI and Test::More to prerequisites.
 

@@ -1,5 +1,6 @@
 package HTML::Calendar::Simple; 
-$HTML::Calendar::Simple::VERSION = "0.02";
+
+$HTML::Calendar::Simple::VERSION = "0.03";
 
 =pod
 
@@ -19,6 +20,9 @@ HTML::Calendar::Simple - A simple html calendar
   print $cal; # stringifies to something like the output of cal
   print $cal->html;
 
+  print HTML::Calendar::Simple->calendar_year($year);
+
+  $cal->pin_up(a_picture_location);  
   $cal->daily_info({ 'day'      => $day,
                      'day_link' => $location,
                      $type1     => $info1,
@@ -202,6 +206,30 @@ sub _table_row {
   return @row;
 }
 
+=head2 pin_up
+
+  $cal->pin_up(a_picture_with_location);
+
+This will add a picture above the calendar month, just like the 
+calendar I have hanging up in my kitchen, (It is a cat calendar, if
+you are interested, as my second son loves cats. As do I!)
+
+This could be used to have a mechanic's garage Pirelli-style pr0n
+calendar, but that would be your call. Mine would be something including
+a Triumph Daytona 955i. Mmmm, nice.
+
+=cut
+
+sub pin_up {
+  my ($self, $pic) = @_;
+  $self->{picture} = $pic;
+}
+
+sub picture {
+  my $self = shift;
+  return exists $self->{picture} ? $self->{picture} : 0;
+}
+
 =head2 html
 
   my $html = $cal->html;
@@ -214,15 +242,58 @@ sub html {
   my $self = shift;
   my @seq  = $self->the_month;
   my $q    = $self->_cgi;
-  my $cal  = $q->h3($months{$self->month} . " " . $self->year)
-           . $q->start_table({-border => 1}) 
+  my $mnth = $q->h3($months{$self->month} . " " . $self->year);
+  my $cal  = $q->start_table({-border => 1}) 
            . $q->th([sort { $days{$a} <=> $days{$b} } keys %days]);
   while (@seq) {
     my @week_row = $self->_table_row(splice @seq, 0, 7);
     $cal .= $q->Tr($q->td([@week_row]));
   }
   $cal .= $q->end_table;
+  $cal = $q->start_table . $q->Tr($q->td({ align => 'center' }, $mnth)) 
+       . $q->Tr($q->td($cal)) . $q->end_table;
+  $cal = $self->_add_pic($cal) if $self->picture;
   return $cal;
+}
+
+=head2 calendar_year
+
+  my $html = HTML::Calendar::Simple->calendar_year($year);
+
+This will return the an html string for every month in the current year.
+
+=cut
+
+sub calendar_year {
+  my $class = shift;
+  my $year  = shift;
+  my $when = defined $year 
+           ? Date::Simple->new($year, 1, 1)
+           : Date::Simple->new;
+     $when = defined $when ? $when : Date::Simple->new;
+  $year = $when->year;
+  my @year;
+  push @year, $class->new({ 'month' => $_, 'year'  => $year }) for (1 .. 12);
+  my $year_string;
+  my $q = CGI->new;
+  while (@year) {
+    my @qrtr = map { $_->html } splice @year, 0, 3;
+    $year_string .= $q->start_table . $q->Tr($q->td({valign => 'top'}, [@qrtr])) 
+                 .  $q->end_table;
+    #$year_string .= $_->html for (@qrtr);
+    $year_string .= $q->br;
+  }
+  return $year_string;
+}
+
+sub _add_pic {
+  my ($self, $cal) = @_;
+  my $q = $self->_cgi;
+  return $q->start_table 
+       . $q->Tr($q->td({ align => 'center' }, 
+                $q->img({ src  => $self->picture }))) 
+       . $q->Tr($q->td($cal)) 
+       . $q->end_table;
 }
 
 sub _date_obj { Date::Simple->new($_[1], $_[2], $_[3]) }
@@ -268,6 +339,8 @@ None known
 
 Oh....lots of things.
 
+  o Rip out the CGI stuff and put all the HTML in a template, so the user
+    can decide on the format of the calendar themselves.
   o Allow for the setting of borders etc like HTML::CalendarMonthSimple.
   o Format the output better if there is info in a daily cell.
   o Perhaps overload '.' so you could add two calendars. Not sure.
@@ -293,7 +366,8 @@ Stray Toaster E<lt>F<coder@stray-toaster.co.uk>E<gt>
 
 =head2 With Thanks
 
-To swm E<lt>F<swm@swmcc.com>E<gt> for some roadtesting!
+ o To swm E<lt>F<swm@swmcc.com>E<gt> for some roadtesting!
+ o To <lt>F<Simon Young><gt> for the pin-up idea
 
 =head1 COPYRIGHT
 
