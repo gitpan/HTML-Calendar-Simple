@@ -1,0 +1,28 @@
+HTML/Calendar/Simple version 0.01
+=================================
+
+DOCUMENTATION
+
+Once installed, do a perldoc HTML::Calendar::Simple
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+Date::Simple - this is A Good Module
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2002, mwk
+
+This module is free software; you can redistribute it or modify it
+under the same terms as Perl itself.
