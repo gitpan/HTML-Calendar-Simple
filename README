@@ -1,4 +1,4 @@
-HTML/Calendar/Simple version 0.03
+HTML/Calendar/Simple version 0.04
 =================================
 
 DOCUMENTATION
@@ -19,6 +19,10 @@ DEPENDENCIES
 This module requires these other modules and libraries:
 
 Date::Simple - this is A Good Module
+Test::More   - you do write tests, right? 
+               (And do them before you write the code too.)
+CGI          - As long as I have the latest version of CGI, I know that
+               my HTML will be the latest standard! I lurve CGI.pm
 
 COPYRIGHT AND LICENCE
 

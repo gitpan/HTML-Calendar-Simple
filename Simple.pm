@@ -1,6 +1,6 @@
 package HTML::Calendar::Simple; 
 
-$HTML::Calendar::Simple::VERSION = "0.03";
+$HTML::Calendar::Simple::VERSION = "0.04";
 
 =pod
 
@@ -17,10 +17,8 @@ HTML::Calendar::Simple - A simple html calendar
      $cal = HTML::Calendar::Simple->new({ 'month' => $month, 
                                           'year'  => $year});
 
-  print $cal; # stringifies to something like the output of cal
-  print $cal->html;
-
-  print HTML::Calendar::Simple->calendar_year($year);
+  my $month = $cal->month;
+  my $year  = $cal->year;
 
   $cal->pin_up(a_picture_location);  
   $cal->daily_info({ 'day'      => $day,
@@ -29,6 +27,19 @@ HTML::Calendar::Simple - A simple html calendar
                      $type2     => $info2,
                      'link'     => [$link, $tag],
   });
+
+  print $cal; # stringifies to something like the output of cal
+
+  my $html = $cal->calendar_month;
+
+  my $html = HTML::Calendar::Simple->calendar_year;
+     $html = HTML::Calendar::Simple->calendar_year({ 'year' => $year });
+     $html = HTML::Calendar::Simple->calendar_year(
+               { 'pin_up' => $where_to_find_the_picture,
+                 'year'   => $year, 
+                 $month   => { $day1 => $link1,
+                               $day2 => $link2, }
+               });
 
 =head1 DESCRIPTION
 
@@ -94,10 +105,24 @@ sub _init {
   $self;
 }
 
-sub spacer    { return ""               } # the filler for the first few entries
-sub month     { $_[0]->{month}          } # month in numerical format
-sub year      { $_[0]->{year}           } # year in YYYY form
-sub the_month { @{ $_[0]->{the_month} } } # this is the list of hashrefs.
+=head2 month
+
+  my $month = $cal->month;
+
+This will return the numerical value of the month.
+
+=head2 year
+
+  my $year = $cal->year;
+
+This will return the four-digit year of the calendar
+
+=cut
+
+sub month      { $_[0]->{month}          } # month in numerical format
+sub year       { $_[0]->{year}           } # year in YYYY form
+sub _spacer    { return ""               } # the filler for the first few entries
+sub _the_month { @{ $_[0]->{the_month} } } # this is the list of hashrefs.
 
 sub _cgi {
   my $self = shift;
@@ -124,7 +149,7 @@ define a method called _meeting.
 For example: 
   
   $cal->daily_info({ 'day'     => 12, 
-                     'meeting' => 'Meet swm');
+                     'meeting' => 'Meet swm' });
 
 and somewhere else in this module...
 
@@ -160,7 +185,7 @@ sub daily_info {
     or return;
   my %info = %{ $ref };
   delete $info{'day'};
-  foreach my $day_ref ($self->the_month) {
+  foreach my $day_ref ($self->_the_month) {
     next unless $day_ref && $day_ref->{date} == $day;
     $day_ref->{$_} = $info{$_} foreach keys %info;
     last;
@@ -172,8 +197,8 @@ sub daily_info {
 
 sub _row_elem {
   my $self = shift;
-  my $ref  = shift or return $self->spacer;
-  return $ref if $ref eq $self->spacer;
+  my $ref  = shift or return $self->_spacer;
+  return $ref if $ref eq $self->_spacer;
   my $q = $self->_cgi;
   my $day = exists $ref->{day_link} 
           ? $q->a({ -href => $ref->{day_link} }, $ref->{date}->day)
@@ -222,6 +247,7 @@ a Triumph Daytona 955i. Mmmm, nice.
 
 sub pin_up {
   my ($self, $pic) = @_;
+  return unless $pic;
   $self->{picture} = $pic;
 }
 
@@ -230,17 +256,27 @@ sub picture {
   return exists $self->{picture} ? $self->{picture} : 0;
 }
 
+=head2 calendar_month
+
+  my $html = $cal->calendar_month;
+
+This will return an html string of the calendar month in question.
+
 =head2 html
 
   my $html = $cal->html;
 
 This will return an html string of the calendar month in question.
 
+THIS CALL HAS BEEN DEPRECATED.
+
 =cut
 
-sub html {
+sub html { $_[0]->calendar_month }
+
+sub calendar_month {
   my $self = shift;
-  my @seq  = $self->the_month;
+  my @seq  = $self->_the_month;
   my $q    = $self->_cgi;
   my $mnth = $q->h3($months{$self->month} . " " . $self->year);
   my $cal  = $q->start_table({-border => 1}) 
@@ -257,32 +293,68 @@ sub html {
 }
 
 =head2 calendar_year
+  
+  my $html = HTML::Calendar::Simple->calendar_year;
+     $html = HTML::Calendar::Simple->calendar_year({ 'year' => $year });
+     $html = HTML::Calendar::Simple->calendar_year(
+               { 'pin_up' => $where_to_find_the_picture,
+                 'year'   => $year, 
+                 $month   => { $day1 => $link1,
+                               $day2 => $link2, }
+               });
 
-  my $html = HTML::Calendar::Simple->calendar_year($year);
+This will return the an html string for every month in the year passed,
+or the current year if nothing passed in.
 
-This will return the an html string for every month in the current year.
+This key of the hashref month is *another* hashref, where the key here 
+is the day in that month, and the value a link.
+
+This is icky, I know, and now puts me in mind of making HTML::Calendar::Day, 
+HTML::Calendar::Month and HTML::Calendar::Year, and having an overarching
+HTML::Calendar.
 
 =cut
 
+sub _generate_months {
+  my ($class, $year, $ref) = @_;
+  my @year;
+  for my $month  (1 .. 12) {
+    my $cal = $class->new({ 'month' => $month, 'year'  => $year });
+    if (defined $ref->{$month}) {
+      my %links = %{ $ref->{$month} };
+      foreach my $day (keys %links) {
+        $cal->daily_info({ 'day'      => $day,
+                           'day_link' => $links{$day},
+        });
+      }
+    }
+    push @year, $cal;
+  }
+  return @year;
+}
+
 sub calendar_year {
-  my $class = shift;
-  my $year  = shift;
+  my ($class, $ref) = @_;
+  my $year = $ref->{year};
   my $when = defined $year 
            ? Date::Simple->new($year, 1, 1)
            : Date::Simple->new;
      $when = defined $when ? $when : Date::Simple->new;
   $year = $when->year;
-  my @year;
-  push @year, $class->new({ 'month' => $_, 'year'  => $year }) for (1 .. 12);
+  my @year = $class->_generate_months($year, $ref);
   my $year_string;
   my $q = CGI->new;
   while (@year) {
-    my @qrtr = map { $_->html } splice @year, 0, 3;
+    my @qrtr = map { $_->calendar_month } splice @year, 0, 3;
+    s/$year//g for @qrtr;
     $year_string .= $q->start_table . $q->Tr($q->td({valign => 'top'}, [@qrtr])) 
-                 .  $q->end_table;
-    #$year_string .= $_->html for (@qrtr);
-    $year_string .= $q->br;
+                 .  $q->end_table   . $q->br;
   }
+  my $pic = defined $ref->{'pin_up'} ? $ref->{'pin_up'} : "";
+  $pic = $q->Tr($q->td({ align => 'center' }, $q->img({ src  => $pic }))) if $pic; 
+  $year_string = $q->start_table . $pic . $q->th($year)
+               . $q->Tr($q->td($year_string)) 
+               . $q->end_table;
   return $year_string;
 }
 
@@ -312,19 +384,19 @@ sub _days_list {
   my $start = $self->_date_obj($year, $month, 1);
   my $end   = $start + 31;
      $end   = $self->_date_obj($end->year, $end->month, 1);
-  my @seq   = map $self->spacer, (1 .. $days{$start->format("%a")});
+  my @seq   = map $self->_spacer, (1 .. $days{$start->format("%a")});
   push @seq, { 'date' => $start++ } while ($start < $end);
   return \@seq;
 }
 
 sub _stringify {
   my $self   = shift;
-  my @month  = $self->the_month;
+  my @month  = $self->_the_month;
   my $string =  "\t\t\t" . $months{ $self->month } . " " . $self->year . "\n\n";
      $string .= join "\t", sort { $days{$a} <=> $days{$b} } keys %days;
      $string .= "\n";
   while (@month) {
-    $string .= join "\t", map { $_  eq $self->spacer ? "" : $_->{date}->day } 
+    $string .= join "\t", map { $_  eq $self->_spacer ? "" : $_->{date}->day } 
                           splice @month, 0, 7;
     $string .= "\n";
   }
@@ -348,6 +420,7 @@ Oh....lots of things.
     or something.
   o Get rid of the days and months hashes and replace with something better.
   o And if all that happens, it may as well be HTML::CalendarMonthSimple!!
+  o Make HTML::Calendar::Day, HTML::Calendar::Month and HTML::Calendar::Year
 
 =head1 SHOWING YOUR APPRECIATION
 
