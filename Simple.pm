@@ -1,5 +1,5 @@
 package HTML::Calendar::Simple; 
-$HTML::Calendar::Simple::VERSION = "0.01";
+$HTML::Calendar::Simple::VERSION = "0.02";
 
 =pod
 

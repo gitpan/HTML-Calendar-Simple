@@ -1,5 +1,8 @@
 Revision history for Perl extension HTML::Calendar::Simple.
 
+0.02  Thu Mar 14 10:10:00 2002
+        - Added CGI and Test::More to prerequisites.
+
 0.01  Wed Mar 13 11:25:09 2002
 	- original version; created by h2xs 1.21 with options
 		-X -n HTML::Calendar::Simple
