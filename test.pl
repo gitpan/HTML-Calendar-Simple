@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Test::More tests => 56;
+use Test::More tests => 59;
 use lib ".";
 use HTML::Calendar::Simple;
 use Date::Simple;
@@ -65,6 +65,12 @@ like $string, qr/<a href=\"http:\/\/www.stray-toaster.co.uk\">My site<\/a>/,
   "HTML string now contains the link";
 is $string, $cal->calendar_month, 
   "call calendar_month is actually the call html. What a country";
+$string = $cal->calendar_month({nonsense => 'silliness'});
+like $string, qr/border="1"/, 'Nonsense border args leave default size';
+$string = $cal->calendar_month;
+like $string, qr/border="1"/, 'No border args leave default size';
+$string = $cal->calendar_month({border => 0});
+like $string, qr/border="0"/, 'Border args give border size';
 
 $string = "$cal";
 unlike $string, qr/<a href=\"http:\/\/www.stray-toaster.co.uk\">My site<\/a>/, 

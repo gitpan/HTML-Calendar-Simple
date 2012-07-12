@@ -1,6 +1,6 @@
 package HTML::Calendar::Simple; 
 
-$HTML::Calendar::Simple::VERSION = "0.04";
+$HTML::Calendar::Simple::VERSION = "0.05";
 
 =pod
 
@@ -28,9 +28,12 @@ HTML::Calendar::Simple - A simple html calendar
                      'link'     => [$link, $tag],
   });
 
-  print $cal; # stringifies to something like the output of cal
-
-  my $html = $cal->calendar_month;
+  print $cal;
+  
+  print $cal->calendar_month;
+                  or
+  print $cal->calendar_month({border => 0}); #this allows you to change the border of the table ( default is set to 1 )
+                                                                          which shows the border with padding.
 
   my $html = HTML::Calendar::Simple->calendar_year;
      $html = HTML::Calendar::Simple->calendar_year({ 'year' => $year });
@@ -131,7 +134,7 @@ sub _cgi {
 }
 
 =head2 daily_info
-
+ 
   $cal->daily_info({ 'day'      => $day,
                      'day_link' => $location, # puts an href on the day
                      $type1     => $info1,
@@ -175,7 +178,34 @@ Note that the key 'link' takes an array ref.
 Also, if you don't pass valid uris as values of the keys 'link' and
 'day_link', well, that is your out if they don't work!
 
+More Examples:
+
+
+you can use a loop to span over days to add info to rather then manualy
+making one for each event.
+  
+  my $cal = HTML::Calendar::Simple->new();
+  
+  for my $day (0..$end_day_of_month){
+        $cal->daily_info({ 'day'      => $day,
+                     'day_link' => $location, # puts an href on the day
+                     $type1     => $info1,
+                     $type2     => $info2,
+                     'link'     => [$link, $tag],
+        });
+  }
+  
+  print $cal->calendar_month();
+ 
+
+
 =cut
+
+sub _current_day {
+    my $self = shift;
+    my $class = shift;
+    return $self->_cgi->a({ -href => 'http://#', -class => $class }, undef)
+  }
 
 sub daily_info {
   my $self = shift;
@@ -220,7 +250,7 @@ sub _link {
   my $self = shift;
   my $ref  = shift or return;
   ref $ref eq 'ARRAY' or return;
-  my ($link, $tag) = @$ref;
+  my ($link, $tag, $class) = @$ref;
   return $self->_cgi->a({ -href => $link }, $tag);
 }
 
@@ -275,11 +305,12 @@ THIS CALL HAS BEEN DEPRECATED.
 sub html { $_[0]->calendar_month }
 
 sub calendar_month {
-  my $self = shift;
+  my ($self, $alt_args) = @_;
+  my $border = (defined $alt_args && ref $alt_args eq 'HASH' && exists $alt_args->{border}) ? $alt_args->{border} : 1;
   my @seq  = $self->_the_month;
   my $q    = $self->_cgi;
   my $mnth = $q->h3($months{$self->month} . " " . $self->year);
-  my $cal  = $q->start_table({-border => 1}) 
+  my $cal  = $q->start_table({-border => $border}) 
            . $q->th([sort { $days{$a} <=> $days{$b} } keys %days]);
   while (@seq) {
     my @week_row = $self->_table_row(splice @seq, 0, 7);
@@ -441,10 +472,11 @@ Stray Toaster E<lt>F<coder@stray-toaster.co.uk>E<gt>
 
  o To swm E<lt>F<swm@swmcc.com>E<gt> for some roadtesting!
  o To <lt>F<Simon Young><gt> for the pin-up idea
+ o To <lt>F<Aaron Yorkovitch><gt> patch for being able to change the table border
 
 =head1 COPYRIGHT
 
-Copyright (C) 2002, mwk
+Copyright (C) 2012, mwk
 
 This module is free software; you can redistribute it or modify it
 under the same terms as Perl itself.
